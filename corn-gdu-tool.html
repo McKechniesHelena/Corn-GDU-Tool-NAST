@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corn Planting GDU Tool</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f4e8;
+    color: #333;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  h1 {
+    text-align: center;
+    color: #2e6b2e;
+    margin-bottom: 6px;
+    font-size: 1.8rem;
+  }
+  .subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 24px;
+    font-size: 0.95rem;
+  }
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #2e6b2e;
+  }
+  select, input[type="date"] {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #c5d6a8;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: #fafff0;
+    margin-bottom: 16px;
+  }
+  select:focus, input[type="date"]:focus {
+    outline: none;
+    border-color: #2e6b2e;
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    background: #2e6b2e;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  button:hover { background: #3d8b3d; }
+  button:disabled { background: #999; cursor: not-allowed; }
+  .spinner {
+    display: none;
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+  }
+  .results { display: none; }
+  .result-header {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .result-header h2 {
+    color: #2e6b2e;
+    font-size: 1.3rem;
+  }
+  .result-header p {
+    color: #888;
+    font-size: 0.9rem;
+  }
+  .emergence-box {
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  .emergence-box.good { background: #e8f5e9; border: 2px solid #66bb6a; }
+  .emergence-box.moderate { background: #fff8e1; border: 2px solid #ffa726; }
+  .emergence-box.slow { background: #fbe9e7; border: 2px solid #ef5350; }
+  .emergence-box .days {
+    font-size: 2.5rem;
+    font-weight: 700;
+  }
+  .emergence-box.good .days { color: #2e7d32; }
+  .emergence-box.moderate .days { color: #e65100; }
+  .emergence-box.slow .days { color: #c62828; }
+  .emergence-box .label {
+    font-size: 1rem;
+    color: #555;
+    margin-top: 4px;
+  }
+  .gdu-summary {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .gdu-stat {
+    text-align: center;
+    flex: 1;
+    min-width: 120px;
+  }
+  .gdu-stat .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2e6b2e;
+  }
+  .gdu-stat .desc {
+    font-size: 0.8rem;
+    color: #888;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  th {
+    background: #2e6b2e;
+    color: #fff;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  th:first-child { text-align: left; border-radius: 6px 0 0 0; }
+  th:last-child { border-radius: 0 6px 0 0; }
+  td {
+    padding: 7px 10px;
+    text-align: center;
+    border-bottom: 1px solid #e8e8e8;
+  }
+  td:first-child { text-align: left; }
+  tr:nth-child(even) { background: #f9fdf3; }
+  tr.emergence-row { background: #c8e6c9; font-weight: 600; }
+  .source-historical { border-left: 3px solid #2e7d32; }
+  .source-noaa { border-left: 3px solid #1565c0; }
+  .source-openmeteo { border-left: 3px solid #f57c00; }
+  .source-seasonal { border-left: 3px solid #7b1fa2; }
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    font-size: 0.8rem;
+    color: #666;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+  }
+  .formula-note {
+    margin-top: 16px;
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: #777;
+    line-height: 1.5;
+  }
+  .divider {
+    display: flex;
+    align-items: center;
+    margin: 12px 0;
+    color: #aaa;
+    font-size: 0.85rem;
+  }
+  .divider::before, .divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #ddd;
+  }
+  .divider span {
+    padding: 0 12px;
+  }
+  .error-msg {
+    display: none;
+    text-align: center;
+    padding: 16px;
+    background: #fbe9e7;
+    border: 1px solid #ef5350;
+    border-radius: 6px;
+    color: #c62828;
+    margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Corn Planting GDU Tool</h1>
+  <p class="subtitle">Estimate days to corn emergence (120 GDUs) based on weather forecast</p>
+
+  <div class="card">
+    <label for="city">Select Location</label>
+    <select id="city">
+      <option value="">-- Choose a city --</option>
+    </select>
+    <div class="divider">
+      <span>OR</span>
+    </div>
+    <label for="zipCode">Enter ZIP Code</label>
+    <div style="display:flex; gap:8px; margin-bottom:16px;">
+      <input type="text" id="zipCode" maxlength="5" pattern="[0-9]{5}" placeholder="e.g. 50401"
+        style="flex:1; padding:10px 14px; border:2px solid #c5d6a8; border-radius:6px; font-size:1rem; background:#fafff0;">
+      <button type="button" id="zipBtn" onclick="lookupZip()"
+        style="width:auto; padding:10px 16px; font-size:0.9rem;">Lookup</button>
+    </div>
+    <div id="zipResult" style="display:none; margin-bottom:16px; padding:8px 12px; background:#e8f5e9; border-radius:6px; font-size:0.9rem; color:#2e6b2e;"></div>
+    <label for="plantDate">Planting Date</label>
+    <input type="date" id="plantDate">
+    <button id="calcBtn" onclick="calculate()">Calculate GDUs</button>
+  </div>
+
+  <div class="spinner" id="spinner">Fetching weather data...</div>
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="results card" id="results">
+    <div class="result-header">
+      <h2 id="resultCity"></h2>
+      <p id="resultDate"></p>
+    </div>
+
+    <div class="emergence-box" id="emergenceBox">
+      <div class="days" id="emergenceDays"></div>
+      <div class="label" id="emergenceLabel"></div>
+    </div>
+
+    <div class="gdu-summary">
+      <div class="gdu-stat">
+        <div class="value" id="totalGdu">--</div>
+        <div class="desc">Total GDUs</div>
+      </div>
+      <div class="gdu-stat">
+        <div class="value" id="avgGdu">--</div>
+        <div class="desc">Avg GDU / Day</div>
+      </div>
+      <div class="gdu-stat">
+        <div class="value" id="targetGdu">120</div>
+        <div class="desc">Emergence Target</div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:#2e7d32"></div> Observed (Past)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#1565c0"></div> NOAA/NWS (Days 1-7)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#f57c00"></div> Open-Meteo (Days 8-16)</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#7b1fa2"></div> Seasonal Forecast (16+)</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>High (&deg;F)</th>
+          <th>Low (&deg;F)</th>
+          <th>Daily GDU</th>
+          <th>Cumul. GDU</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody id="forecastTable"></tbody>
+    </table>
+
+    <div class="formula-note">
+      <strong>GDU Formula (Corn):</strong> GDU = ((min(T<sub>max</sub>, 86) + max(T<sub>min</sub>, 50)) / 2) &minus; 50.
+      Negative values set to 0. Emergence expected at ~120 accumulated GDUs.
+      <br><br>
+      <strong>Data sources:</strong>
+      Past dates use observed actuals from <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> archive |
+      Future days 1-7 from <a href="https://www.weather.gov/" target="_blank">NOAA/NWS</a> |
+      Future days 8-16 from Open-Meteo 16-day forecast |
+      Beyond day 16 from Open-Meteo ECMWF seasonal forecast.
+      <br>For past planting dates, 18 days of accumulation are shown.
+    </div>
+  </div>
+</div>
+
+<script>
+const cities = [
+  { name: "Mason City, IA",   lat: 43.1536, lon: -93.2010 },
+  { name: "Osage, IA",        lat: 43.2841, lon: -92.8110 },
+  { name: "Aurelia, IA",      lat: 42.7142, lon: -95.4347 },
+  { name: "Guthrie Center, IA", lat: 41.6769, lon: -94.5031 },
+  { name: "Sheldon, IA",      lat: 43.1811, lon: -95.8561 },
+  { name: "Royalton, MN",     lat: 45.8272, lon: -94.2952 },
+  { name: "Canby, MN",        lat: 44.7088, lon: -96.2765 },
+  { name: "Plankinton, SD",   lat: 43.7153, lon: -98.4848 },
+  { name: "Menno, SD",        lat: 43.2386, lon: -97.5770 },
+  { name: "Freeman, SD",      lat: 43.3522, lon: -97.4362 },
+  { name: "Tripp, SD",        lat: 43.2247, lon: -97.9612 },
+  { name: "Clear Lake, SD",   lat: 44.7522, lon: -96.6832 },
+  { name: "Iroquois, SD",     lat: 44.3675, lon: -97.8468 }
+];
+
+const EMERGENCE_GDU = 120;
+
+const citySelect = document.getElementById("city");
+cities.forEach((c, i) => {
+  const opt = document.createElement("option");
+  opt.value = i;
+  opt.textContent = c.name;
+  citySelect.appendChild(opt);
+});
+
+// ZIP code lookup state
+let zipLocation = null; // { name, lat, lon }
+
+// Clear ZIP when city is selected, and vice versa
+citySelect.addEventListener("change", () => {
+  if (citySelect.value !== "") {
+    document.getElementById("zipCode").value = "";
+    document.getElementById("zipResult").style.display = "none";
+    zipLocation = null;
+  }
+});
+
+async function lookupZip() {
+  const zip = document.getElementById("zipCode").value.trim();
+  const resultDiv = document.getElementById("zipResult");
+  if (!/^\d{5}$/.test(zip)) {
+    resultDiv.style.display = "block";
+    resultDiv.style.background = "#fbe9e7";
+    resultDiv.style.color = "#c62828";
+    resultDiv.textContent = "Please enter a valid 5-digit ZIP code.";
+    zipLocation = null;
+    return;
+  }
+
+  resultDiv.style.display = "block";
+  resultDiv.style.background = "#f5f5f5";
+  resultDiv.style.color = "#666";
+  resultDiv.textContent = "Looking up ZIP code...";
+
+  try {
+    const resp = await fetch(`https://api.zippopotam.us/us/${zip}`);
+    if (!resp.ok) throw new Error("ZIP code not found.");
+    const data = await resp.json();
+    const loc = data.places[0];
+    const name = `${loc["place name"]}, ${loc["state abbreviation"]}`;
+    const lat = parseFloat(loc.latitude);
+    const lon = parseFloat(loc.longitude);
+
+    zipLocation = { name, lat, lon };
+    citySelect.value = ""; // clear city dropdown
+    resultDiv.style.background = "#e8f5e9";
+    resultDiv.style.color = "#2e6b2e";
+    resultDiv.textContent = `${name} (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+  } catch (e) {
+    zipLocation = null;
+    resultDiv.style.background = "#fbe9e7";
+    resultDiv.style.color = "#c62828";
+    resultDiv.textContent = "ZIP code not found. Please try another.";
+  }
+}
+
+const plantInput = document.getElementById("plantDate");
+const today = new Date();
+plantInput.value = toLocalDateStr(today);
+
+function toLocalDateStr(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+function calcGDU(highF, lowF) {
+  const tMax = Math.min(highF, 86);
+  const tMin = Math.max(lowF, 50);
+  return Math.max(((tMax + tMin) / 2) - 50, 0);
+}
+
+function cToF(c) { return (c * 9 / 5) + 32; }
+
+// ── Open-Meteo Historical (observed actuals for past dates) ──
+async function fetchHistorical(lat, lon, startDate, endDate) {
+  try {
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}` +
+      `&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit` +
+      `&start_date=${startDate}&end_date=${endDate}&timezone=America%2FChicago`;
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (data.error || !data.daily || !data.daily.time) return null;
+
+    const lookup = {};
+    for (let i = 0; i < data.daily.time.length; i++) {
+      if (data.daily.temperature_2m_max[i] !== null && data.daily.temperature_2m_min[i] !== null) {
+        lookup[data.daily.time[i]] = {
+          high: data.daily.temperature_2m_max[i],
+          low: data.daily.temperature_2m_min[i]
+        };
+      }
+    }
+    return lookup;
+  } catch (e) {
+    console.warn("Historical fetch failed:", e);
+    return null;
+  }
+}
+
+// ── NOAA/NWS Forecast (7-8 days) ──
+// Uses raw gridpoint data for properly attributed daily min/max temps
+// Returns a date-keyed lookup: { "2026-04-10": { high: 54, low: 34 }, ... }
+async function fetchNOAA(lat, lon) {
+  try {
+    const ptResp = await fetch(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`, {
+      headers: { 'User-Agent': 'CornGDUTool/1.0' }
+    });
+    if (!ptResp.ok) return null;
+    const ptData = await ptResp.json();
+    const gridUrl = ptData.properties.forecastGridData;
+
+    const gridResp = await fetch(gridUrl, {
+      headers: { 'User-Agent': 'CornGDUTool/1.0' }
+    });
+    if (!gridResp.ok) return null;
+    const gridData = await gridResp.json();
+
+    const highs = {};
+    const lows = {};
+
+    // Parse maxTemperature (values are in Celsius)
+    for (const v of (gridData.properties.maxTemperature.values || [])) {
+      const dateStr = v.validTime.substring(0, 10);
+      highs[dateStr] = cToF(v.value);
+    }
+
+    // Parse minTemperature (values are in Celsius)
+    // The validTime starts in the early morning hours (UTC), convert to local date
+    for (const v of (gridData.properties.minTemperature.values || [])) {
+      // The min temp period starts around 01:00 UTC (evening local) or 04:00 UTC (late night local)
+      // The date in the validTime represents the local calendar date for this overnight low
+      const dateStr = v.validTime.substring(0, 10);
+      lows[dateStr] = cToF(v.value);
+    }
+
+    // Combine: only return dates that have both high and low
+    const result = {};
+    for (const date of Object.keys(highs)) {
+      if (lows[date] !== undefined) {
+        result[date] = { high: highs[date], low: lows[date] };
+      }
+    }
+    return result;
+  } catch (e) {
+    console.warn("NOAA fetch failed:", e);
+    return null;
+  }
+}
+
+// ── Open-Meteo 16-day Forecast ──
+async function fetchOpenMeteo(lat, lon) {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit` +
+      `&forecast_days=16&timezone=America%2FChicago`;
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (!data.daily || !data.daily.time) return null;
+
+    const lookup = {};
+    for (let i = 0; i < data.daily.time.length; i++) {
+      lookup[data.daily.time[i]] = {
+        high: data.daily.temperature_2m_max[i],
+        low: data.daily.temperature_2m_min[i]
+      };
+    }
+    return lookup;
+  } catch (e) {
+    console.warn("Open-Meteo fetch failed:", e);
+    return null;
+  }
+}
+
+// ── Open-Meteo Seasonal Forecast (ECMWF, months out) ──
+async function fetchSeasonal(lat, lon) {
+  try {
+    const url = `https://seasonal-api.open-meteo.com/v1/seasonal?latitude=${lat}&longitude=${lon}` +
+      `&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit` +
+      `&timezone=America%2FChicago`;
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (data.error || !data.daily || !data.daily.time) return null;
+
+    const lookup = {};
+    for (let i = 0; i < data.daily.time.length; i++) {
+      lookup[data.daily.time[i]] = {
+        high: data.daily.temperature_2m_max[i],
+        low: data.daily.temperature_2m_min[i]
+      };
+    }
+    return lookup;
+  } catch (e) {
+    console.warn("Seasonal fetch failed:", e);
+    return null;
+  }
+}
+
+async function calculate() {
+  const idx = citySelect.value;
+  const plantDate = document.getElementById("plantDate").value;
+
+  // Determine location from city dropdown or ZIP lookup
+  let city;
+  if (idx !== "") {
+    city = cities[idx];
+  } else if (zipLocation) {
+    city = zipLocation;
+  } else {
+    alert("Please select a city or look up a ZIP code.");
+    return;
+  }
+  if (!plantDate) { alert("Please select a planting date."); return; }
+  const btn = document.getElementById("calcBtn");
+  const spinner = document.getElementById("spinner");
+  const results = document.getElementById("results");
+  const errorMsg = document.getElementById("errorMsg");
+
+  btn.disabled = true;
+  spinner.style.display = "block";
+  results.style.display = "none";
+  errorMsg.style.display = "none";
+
+  try {
+    const todayStr = toLocalDateStr(today);
+    const isPastDate = plantDate < todayStr;
+
+    // Determine which data sources we need
+    let historical = null;
+    if (isPastDate) {
+      // Fetch historical observed data from planting date up to yesterday
+      const yesterday = getFutureDate(todayStr, -1);
+      if (plantDate <= yesterday) {
+        historical = await fetchHistorical(city.lat, city.lon, plantDate, yesterday);
+      }
+    }
+
+    // Fetch forecast sources in parallel (needed for future days)
+    const [noaa, openMeteo, seasonal] = await Promise.all([
+      fetchNOAA(city.lat, city.lon),
+      fetchOpenMeteo(city.lat, city.lon),
+      fetchSeasonal(city.lat, city.lon)
+    ]);
+
+    if (!openMeteo && !noaa && !historical) {
+      throw new Error("Unable to fetch weather data. Please try again.");
+    }
+
+    // Build combined daily data, day by day from planting date until emergence
+    let cumulGdu = 0;
+    let emergenceDay = null;
+    let rows = [];
+    const maxDays = 120;
+
+    for (let d = 0; d < maxDays; d++) {
+      const dateStr = getFutureDate(plantDate, d);
+      let high, low, source;
+
+      // Tier 0: Historical observed data (past dates, most accurate)
+      if (historical && historical[dateStr]) {
+        high = historical[dateStr].high;
+        low = historical[dateStr].low;
+        source = "historical";
+      }
+      // Tier 1: NOAA (most trusted forecast, ~7 days)
+      else if (noaa && noaa[dateStr]) {
+        high = noaa[dateStr].high;
+        low = noaa[dateStr].low;
+        source = "noaa";
+      }
+      // Tier 2: Open-Meteo 16-day
+      else if (openMeteo && openMeteo[dateStr]) {
+        high = openMeteo[dateStr].high;
+        low = openMeteo[dateStr].low;
+        source = "openmeteo";
+      }
+      // Tier 3: Seasonal forecast
+      else if (seasonal && seasonal[dateStr]) {
+        high = seasonal[dateStr].high;
+        low = seasonal[dateStr].low;
+        source = "seasonal";
+      }
+      // No data available for this date
+      else {
+        break;
+      }
+
+      const dailyGdu = calcGDU(high, low);
+      cumulGdu += dailyGdu;
+      const emerged = cumulGdu >= EMERGENCE_GDU && emergenceDay === null;
+      if (emerged) emergenceDay = d;
+
+      rows.push({
+        date: dateStr,
+        high: Math.round(high * 10) / 10,
+        low: Math.round(low * 10) / 10,
+        gdu: dailyGdu,
+        cumul: cumulGdu,
+        emerged,
+        source
+      });
+
+      if (emerged) break;
+    }
+
+    if (rows.length === 0) {
+      throw new Error("No weather data available for the selected date range.");
+    }
+
+    const totalGdu = cumulGdu;
+    const avgGdu = totalGdu / rows.length;
+    const estimatedDays = emergenceDay !== null ? emergenceDay + 1 : null;
+
+    // Render
+    document.getElementById("resultCity").textContent = city.name;
+    document.getElementById("resultDate").textContent = `Planting date: ${formatDate(plantDate)}`;
+
+    const box = document.getElementById("emergenceBox");
+    const daysEl = document.getElementById("emergenceDays");
+    const labelEl = document.getElementById("emergenceLabel");
+
+    if (estimatedDays !== null) {
+      daysEl.textContent = `${estimatedDays} day${estimatedDays !== 1 ? 's' : ''}`;
+      const emergeDateStr = getFutureDate(plantDate, estimatedDays - 1);
+      labelEl.textContent = `Expected emergence: ${formatDate(emergeDateStr)}`;
+      box.className = "emergence-box " + (estimatedDays <= 10 ? "good" : estimatedDays <= 18 ? "moderate" : "slow");
+    } else {
+      daysEl.textContent = "N/A";
+      labelEl.textContent = `Only ${totalGdu.toFixed(1)} GDUs accumulated in available forecast data. Could not reach 120.`;
+      box.className = "emergence-box slow";
+    }
+
+    document.getElementById("totalGdu").textContent = totalGdu.toFixed(1);
+    document.getElementById("avgGdu").textContent = avgGdu.toFixed(1);
+
+    const tbody = document.getElementById("forecastTable");
+    tbody.innerHTML = "";
+    rows.forEach(r => {
+      const tr = document.createElement("tr");
+      if (r.emerged) tr.className = "emergence-row";
+      const srcClass = "source-" + r.source;
+      tr.classList.add(srcClass);
+      if (r.source === "seasonal") { tr.style.fontStyle = "italic"; }
+      const srcLabel = r.source === "historical" ? "Observed" : r.source === "noaa" ? "NOAA" : r.source === "openmeteo" ? "Open-Meteo" : "Seasonal";
+      tr.innerHTML = `
+        <td>${formatDate(r.date)}</td>
+        <td>${r.high.toFixed(1)}</td>
+        <td>${r.low.toFixed(1)}</td>
+        <td>${r.gdu.toFixed(1)}</td>
+        <td>${r.cumul.toFixed(1)}${r.emerged ? ' &#10003;' : ''}</td>
+        <td style="font-size:0.75rem">${srcLabel}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    results.style.display = "block";
+  } catch (err) {
+    errorMsg.textContent = err.message;
+    errorMsg.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    spinner.style.display = "none";
+  }
+}
+
+function getFutureDate(dateStr, daysAhead) {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + daysAhead);
+  return toLocalDateStr(d);
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+</script>
+</body>
+</html>
