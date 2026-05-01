@@ -587,7 +587,7 @@ async function calculate() {
     let cumulGdu = 0;
     let emergenceDay = null;
     let rows = [];
-    const maxDays = 120;
+    const maxDays = Math.max(120, Math.ceil(goal * 1.5), 365);
 
     for (let d = 0; d < maxDays; d++) {
       const dateStr = getFutureDate(plantDate, d);
@@ -624,7 +624,7 @@ async function calculate() {
 
       const dailyGdu = calcGDU(high, low);
       cumulGdu += dailyGdu;
-      const emerged = cumulGdu >= EMERGENCE_GDU && emergenceDay === null;
+      const emerged = cumulGdu >= goal && emergenceDay === null;
       if (emerged) emergenceDay = d;
 
       rows.push({
