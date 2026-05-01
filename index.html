@@ -42,7 +42,7 @@
     margin-bottom: 8px;
     color: #2e6b2e;
   }
-  select, input[type="date"] {
+  select, input[type="date"], input[type="number"] {
     width: 100%;
     padding: 10px 14px;
     border: 2px solid #c5d6a8;
@@ -51,7 +51,7 @@
     background: #fafff0;
     margin-bottom: 16px;
   }
-  select:focus, input[type="date"]:focus {
+  select:focus, input[type="date"]:focus, input[type="number"]:focus {
     outline: none;
     border-color: #2e6b2e;
   }
@@ -233,6 +233,8 @@
     <div id="zipResult" style="display:none; margin-bottom:16px; padding:8px 12px; background:#e8f5e9; border-radius:6px; font-size:0.9rem; color:#2e6b2e;"></div>
     <label for="plantDate">Planting Date</label>
     <input type="date" id="plantDate">
+    <label for="gduGoal">Emergence GDU Goal</label>
+    <input type="number" id="gduGoal" min="0" step="1" value="120" placeholder="120">
     <button id="calcBtn" onclick="calculate()">Calculate GDUs</button>
   </div>
 
@@ -320,6 +322,13 @@ const cities = [
 const EMERGENCE_GDU = 120;
 
 const citySelect = document.getElementById("city");
+const gduGoalInput = document.getElementById("gduGoal");
+
+function getGduGoal() {
+  const parsed = Number(gduGoalInput.value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : EMERGENCE_GDU;
+}
+
 cities.forEach((c, i) => {
   const opt = document.createElement("option");
   opt.value = i;
@@ -538,6 +547,7 @@ async function calculate() {
     return;
   }
   if (!plantDate) { alert("Please select a planting date."); return; }
+  const goal = getGduGoal();
   const btn = document.getElementById("calcBtn");
   const spinner = document.getElementById("spinner");
   const results = document.getElementById("results");
@@ -641,6 +651,7 @@ async function calculate() {
     // Render
     document.getElementById("resultCity").textContent = city.name;
     document.getElementById("resultDate").textContent = `Planting date: ${formatDate(plantDate)}`;
+    document.getElementById("targetGdu").textContent = goal;
 
     const box = document.getElementById("emergenceBox");
     const daysEl = document.getElementById("emergenceDays");
@@ -653,7 +664,7 @@ async function calculate() {
       box.className = "emergence-box " + (estimatedDays <= 10 ? "good" : estimatedDays <= 18 ? "moderate" : "slow");
     } else {
       daysEl.textContent = "N/A";
-      labelEl.textContent = `Only ${totalGdu.toFixed(1)} GDUs accumulated in available forecast data. Could not reach 120.`;
+      labelEl.textContent = `Only ${totalGdu.toFixed(1)} GDUs accumulated in available forecast data. Could not reach ${goal}.`;
       box.className = "emergence-box slow";
     }
 
